@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFID Linker</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 350px; text-align: center; }
+        h1 { color: #333; margin-bottom: 30px; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background-color: #45a049; }
+        #status-display { margin-top: 20px; padding: 15px; border-radius: 4px; font-weight: bold; }
+        .status-waiting { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .status-linked { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RFID Enrollment</h1>
+        <form id="registration-form">
+            <input type="text" id="name" name="name" placeholder="Full Name" required>
+            <input type="text" id="reg_no" name="reg_no" placeholder="Register Number" required>
+            <button type="submit" id="register-btn">Register & Start Scan</button>
+        </form>
+        <div id="status-display">Enter your details above.</div>
+    </div>
+
+    <script>
+        document.getElementById('registration-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const statusDisplay = document.getElementById('status-display');
+            const registerBtn = document.getElementById('register-btn');
+
+            // 1. Submit form data to Flask
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(new FormData(form))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'waiting') {
+                    statusDisplay.className = 'status-display status-waiting';
+                    statusDisplay.textContent = 'WAITING FOR SCAN... Please tap your RFID card now.';
+                    registerBtn.disabled = true;
+                    // 2. Start checking status loop
+                    checkLinkingStatus(data.reg_no);
+                } else {
+                    statusDisplay.className = 'status-display status-error';
+                    statusDisplay.textContent = data.message;
+                }
+            })
+            .catch(error => {
+                statusDisplay.className = 'status-display status-error';
+                statusDisplay.textContent = 'Network error. Could not reach server.';
+            });
+        });
+
+        function checkLinkingStatus(regNo) {
+            const statusDisplay = document.getElementById('status-display');
+            const registerBtn = document.getElementById('register-btn');
+            
+            // Set up a polling interval (check every 2 seconds)
+            const intervalId = setInterval(function() {
+                fetch(`/check_status/${regNo}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'linked') {
+                        clearInterval(intervalId);
+                        statusDisplay.className = 'status-display status-linked';
+                        statusDisplay.textContent = 'SUCCESS! RFID card linked to student.';
+                        registerBtn.disabled = false;
+                        // Clear the form fields after success
+                        document.getElementById('registration-form').reset();
+                    } else if (data.status === 'timeout' || data.status === 'error') {
+                        clearInterval(intervalId);
+                        statusDisplay.className = 'status-display status-error';
+                        statusDisplay.textContent = data.message + ' Please try again.';
+                        registerBtn.disabled = false;
+                    }
+                    // If status is 'waiting', the loop continues.
+                })
+                .catch(error => {
+                    // Ignore transient network errors, keep polling
+                });
+            }, 2000); // Poll every 2 seconds
+        }
+    </script>
+</body>
+</html>

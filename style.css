@@ -1,0 +1,153 @@
+/* -------------------------------------- */
+/* BASE STYLES & LAYOUT */
+/* -------------------------------------- */
+body {
+    /* Font Stack for modern look, using Google Fonts specified in HTML */
+    font-family: 'Roboto', sans-serif;
+    
+    /* --- BLENDED BGCOLOR: MULTI-STOP GRADIENT (Cool/Warm Blend) --- */
+    background: linear-gradient(
+        150deg, 
+        #e9f3f9 0%,       /* Very light cool blue-grey */
+        #09bed9 50%,       /* Neutral light grey-blue */
+        #132d69 100%       /* Almost pure white/lightest end */
+    );
+    background-attachment: fixed; /* Ensures the gradient covers the whole page */
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* -------------------------------------- */
+/* CONTAINER & HEADER */
+/* -------------------------------------- */
+.container {
+    background: #ffffff;
+    padding: 45px 40px;
+    border-radius: 18px; 
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); /* Stronger, cleaner shadow lift */
+    width: 100%;
+    max-width: 420px; 
+    text-align: center;
+    transition: transform 0.3s ease-in-out;
+}
+
+.welcome-header {
+    font-family: 'Pacifico', cursive;
+    font-size: 2.5em; 
+    color: #5d35b6; /* Richer, darker purple for prominence */
+    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+}
+
+.instruction {
+    color: #777;
+    margin-bottom: 35px;
+    font-size: 1em;
+    font-weight: 400;
+}
+
+/* -------------------------------------- */
+/* FORM ELEMENTS */
+/* -------------------------------------- */
+.form-group {
+    text-align: left;
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #444;
+    font-size: 0.95em;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 14px 12px;
+    border: 2px solid #e0e0e0; /* Thicker border */
+    border-radius: 10px;
+    box-sizing: border-box;
+    font-size: 1.05em;
+    color: #333;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input[type="text"]:focus {
+    border-color: #7b68ee; /* Medium Slate Blue focus */
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(123, 104, 238, 0.2);
+}
+
+/* -------------------------------------- */
+/* BUTTONS */
+/* -------------------------------------- */
+#registerButton {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 10px;
+    background-color: #8A2BE2; /* Blue Violet - impactful purple */
+    color: white;
+    font-size: 1.15em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s, box-shadow 0.3s;
+    box-shadow: 0 6px 15px rgba(138, 43, 226, 0.4);
+}
+
+#registerButton:hover:not(:disabled) {
+    background-color: #6A5ACD; /* Richer blue/purple on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+    box-shadow: 0 8px 20px rgba(138, 43, 226, 0.5);
+}
+
+#registerButton:disabled {
+    background-color: #e88080; /* Gray when waiting */
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.9;
+}
+
+/* -------------------------------------- */
+/* MESSAGES & STATUS */
+/* -------------------------------------- */
+#message {
+    margin-top: 30px;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 0.95em;
+    text-align: left;
+    font-weight: 500;
+    min-height: 40px; 
+    border: 1px solid transparent;
+    line-height: 1.4;
+    transition: all 0.3s ease;
+}
+
+.message.success {
+    background-color: #e6ffed; /* Very light success green */
+    color: #1f8b4d; /* Dark success green text */
+    border-color: #4CAF50;
+}
+
+.message.success.waiting {
+    /* Style specifically for the "Waiting for Scan" state */
+    background-color: #f7f3ff; /* Light lavender color */
+    color: #6A5ACD; /* Medium purple text */
+    border-color: #8A2BE2;
+}
+
+
+.message.error {
+    background-color: #ffeeee; /* Very light error red */
+    color: #d32f2f; /* Dark error red text */
+    border-color: #f44336;
+}

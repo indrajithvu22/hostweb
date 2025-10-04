@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initial RFID Linking</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="welcome-header">Initial RFID Linking</h1>
+        <p class="instruction">Phase 1: Enter details and scan your new tag on the device.</p>
+        
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required placeholder="E.g., John Doe">
+            </div>
+            <div class="form-group">
+                <label for="register_number">Register Number (6 Digits):</label>
+                <input type="text" id="register_number" name="register_number" pattern="\d{6}" title="Register number must be 6 digits" required placeholder="E.g., 210001">
+            </div>
+            <button type="submit" id="registerButton">Register & Wait for Scan</button>
+        </form>
+        
+        <p id="message" class="message"></p>
+    </div>
+
+    <script>
+        const registrationForm = document.getElementById('registrationForm');
+        const registerButton = document.getElementById('registerButton');
+        const nameInput = document.getElementById('name');
+        const registerNumberInput = document.getElementById('register_number');
+        const messageEl = document.getElementById('message');
+
+        let pollingInterval = null;
+
+        // Clear previous messages when the user starts typing again
+        const clearMessageOnInput = () => {
+            if (!pollingInterval) {
+                messageEl.textContent = '';
+                messageEl.className = 'message'; 
+            }
+        };
+        nameInput.addEventListener('input', clearMessageOnInput);
+        registerNumberInput.addEventListener('input', clearMessageOnInput);
+
+
+        // --- Polling function to check server status ---
+        async function startPolling(regNo, name) {
+            registerButton.disabled = true;
+            registerButton.textContent = "Waiting for Scan...";
+            
+            messageEl.textContent = `⏱️ Data saved for ${name} (${regNo}). Please scan your RFID tag now...`;
+            messageEl.className = 'message success waiting'; // Use a specific waiting class for style
+
+            // Check every 1.5 seconds
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/check_link_status');
+                    const data = await response.json();
+
+                    if (data.status === 'complete') {
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        
+                        // Success Feedback
+                        const linkedName = data.name || name;
+                        messageEl.textContent = `✅ Success! Tag linked for ${linkedName}. You are all set!`;
+                        messageEl.className = 'message success complete';
+                        
+                        // Reset form and button
+                        registerButton.disabled = false;
+                        registerButton.textContent = "Register Another Student";
+                        registrationForm.reset();
+                        
+                    } else if (data.status === 'idle') {
+                        // Polling stopped on the server side unexpectedly
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        registerButton.disabled = false;
+                        registerButton.textContent = "Register & Wait for Scan";
+                        messageEl.textContent = '⚠️ Linking session timed out or was unexpectedly closed.';
+                        messageEl.className = 'message error';
+                    }
+                    
+                } catch(error) {
+                    console.error("Polling Error:", error);
+                }
+            }, 1500); 
+        }
+
+        registrationForm.addEventListener('submit', async function(event) {
+            event.preventDefault(); 
+            if (pollingInterval) return; // Prevent double submission while waiting
+
+            const name = nameInput.value;
+            const registerNumber = registerNumberInput.value;
+            
+            registerButton.disabled = true;
+            registerButton.textContent = "Saving to Database...";
+            messageEl.textContent = '';
+            messageEl.className = 'message';
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name, register_number: registerNumber })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'waiting_scan') { 
+                    // Success! Start polling
+                    startPolling(registerNumber, name);
+                    
+                } else { 
+                    // General server-side or validation error
+                    messageEl.textContent = data.message || 'An unknown error occurred during registration.';
+                    messageEl.className = 'message error';
+                    registerButton.disabled = false;
+                    registerButton.textContent = "Register & Wait for Scan";
+                }
+            } catch (error) {
+                messageEl.textContent = '❌ A network error occurred. Check Flask server connection.';
+                messageEl.className = 'message error';
+                registerButton.disabled = false;
+                registerButton.textContent = "Register & Wait for Scan";
+                console.error('Registration Fetch Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
